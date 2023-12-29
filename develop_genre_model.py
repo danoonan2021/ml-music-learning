@@ -3,9 +3,9 @@ import numpy as np
 from tensorflow import keras
 import librosa
 import matplotlib.pyplot as plt
-import math
 import json
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+from sklearn.model_selection import train_test_split
+
 
 DATA_PATH = 'vocab.json'
 EPOCHS = 64
@@ -33,7 +33,7 @@ def split_train_test_data(features, labels):
 
 def save_model(model, accuracy):
 
-    model_name = ('model_' + EPOCHS + "_" + str(accuracy))
+    model_name = ('model_' + str(EPOCHS) + "_" + str(accuracy[1]))
 
     model.save(model_name)
 
@@ -44,8 +44,9 @@ with open(DATA_PATH, 'r') as fp:
 features = np.array(data["mfcc"])
 labels = np.array(data["labels"])
 
-features_train, labels_train, features_validation, labels_validation, features_test, labels_test = split_train_test_data(features, labels)
-
+# splits the data into 80% train, 20% test
+# features_train, labels_train, features_validation, labels_validation, features_test, labels_test = split_train_test_data(features, labels)
+features_train, features_test, labels_train, labels_test = train_test_split(features, labels, test_size=0.2)
 
 # build network topology
 model = keras.Sequential([
@@ -69,7 +70,7 @@ model_summ = model.summary()
 print(f"Model Summary: \n---------\n{model_summ}")
 
 # train model
-history = model.fit(features_train.tolist(), labels_train.tolist(), validation_data=(features_validation.tolist(), labels_validation.tolist()), verbose=1, batch_size=32, epochs=EPOCHS)
+history = model.fit(features_train.tolist(), labels_train.tolist(), verbose=1, batch_size=32, epochs=EPOCHS)
 
 stats = model.evaluate(x=features_test.tolist(), y=labels_test.tolist(), verbose=0)
 
@@ -85,4 +86,4 @@ plt.xlabel('epoch')
 # Show the plot in a window that stays open
 plt.show()
 
-save_model(model)
+save_model(model, stats)
