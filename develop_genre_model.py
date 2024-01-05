@@ -3,10 +3,12 @@ from tensorflow import keras
 import matplotlib.pyplot as plt
 import json
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
 
 
 DATA_PATH = 'vocab.json'
 EPOCHS = 64
+NUM_OF_GENRES = 10
 
 def save_model(model, accuracy):
 
@@ -33,7 +35,7 @@ def build_model(input_shape):
     # add hidden layer
     model.add(keras.layers.Flatten())
     model.add(keras.layers.Dense(32, activation='relu'))
-    model.add(keras.layers.Dropout(0.2))
+    model.add(keras.layers.Dropout(0.3))
     # output 
     model.add(keras.layers.Dense(10, activation='softmax'))
 
@@ -49,8 +51,8 @@ def load_split_data(test_size=0.2, val_size=0.2):
     labels = np.array(data["labels"])
 
     # Splits the data into 60% train, 20% test, 20% validation
-    features_train, features_test, labels_train, labels_test = train_test_split(features, labels, test_size=test_size)
-    features_train, features_val, labels_train, labels_val = train_test_split(features_train, labels_train, test_size=val_size)
+    features_train, features_test, labels_train, labels_test = train_test_split(features, labels, test_size=test_size, stratify=labels)
+    features_train, features_val, labels_train, labels_val = train_test_split(features_train, labels_train, test_size=val_size, stratify=labels_train)
 
     # Add a new dimension to the input_shape (2D -> 3D)
     num_frames = features_train.shape[1]
@@ -67,33 +69,48 @@ def plot_model_stats(stats):
     print("----------")
     print(f"Model Evaluation stats (loss, accuracy): {stats}")
 
-    # Show model statistics
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['loss'])
-    plt.title('model accuracy/loss')
-    plt.ylabel('accuracy(blue), accuracy(yellow)')
-    plt.xlabel('epoch')
+    # Show the accuracy and loss plots in separate windows
+    figure, axis = plt.subplots(1, 2, figsize=(12, 6))
 
-    # Show the plot in a window that stays open
+    # For Accuracy Plot
+    axis[0].plot(history.history['accuracy'])
+    axis[0].set_title("Model Accuracy")
+    axis[0].set_xlabel('Epochs')
+    axis[0].set_ylabel('Accuracy')
+
+    # For Loss Plot
+    axis[1].plot(history.history['loss'])
+    axis[1].set_title("Model Loss")
+    axis[1].set_xlabel('Epochs')
+    axis[1].set_ylabel('Loss')
+
+    plt.tight_layout()
     plt.show()
 
 
 # split the data into 60% train, 20% test, 20% validation
 features_train, features_test, features_val, labels_train, labels_test, labels_val = load_split_data(0.2, 0.2)
 
+labels_train = to_categorical(labels_train, num_classes=NUM_OF_GENRES)
+labels_val = to_categorical(labels_val, num_classes=NUM_OF_GENRES)
+labels_test = to_categorical(labels_test, num_classes=NUM_OF_GENRES)
+
 # build network topology
 model = build_model((features_train.shape[1], features_train.shape[2], 1))
 
+earlystop = keras.callbacks.EarlyStopping(
+    monitor='val_loss', patience=10, verbose=1)
+
 # compile model
 model.compile(optimizer='adam',
-                loss='sparse_categorical_crossentropy',
+                loss=keras.losses.categorical_crossentropy,
                 metrics=['accuracy'])
 # model summary
 model_summ = model.summary()
 print(f"Model Summary: \n---------\n{model_summ}")
 
 # train model
-history = model.fit(features_train.tolist(), labels_train.tolist(), validation_data=(features_val.tolist(), labels_val.tolist()), verbose=1, batch_size=32, epochs=EPOCHS)
+history = model.fit(features_train.tolist(), labels_train.tolist(), validation_data=(features_val.tolist(), labels_val.tolist()), verbose=1, batch_size=32, epochs=EPOCHS, callbacks=[earlystop])
 
 # Get the loss and accuracy of the model
 stats = model.evaluate(x=features_test.tolist(), y=labels_test.tolist(), verbose=0)
