@@ -4,7 +4,7 @@ import librosa
 import math
 
 # init
-path_to_dataset = './Data/genres_original'
+path_to_dataset = './gtzan/genres_original'
 WAV_DURATION = 30
 DEFAULT_SR = 22050
 path_to_json = 'vocab.json'

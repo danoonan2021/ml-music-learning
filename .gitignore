@@ -1,4 +1,5 @@
 # including gtzan dataset and json
-/Data/
+/gtzan/
 vocab.json
 model_*
+/assets/
