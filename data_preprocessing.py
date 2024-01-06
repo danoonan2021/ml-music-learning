@@ -55,7 +55,6 @@ def convert_to_mfcc(dataset_path, json_path, num_mfcc=13, num_fft=2048, hop_leng
                         # Transpose mfcc and add it to json map
                         mfcc = mfcc.T
 
-
                         if len(mfcc) == expected_number_of_mfcc_vectors_per_segment:
                             data["mfcc"].append(mfcc.tolist())
                             data["labels"].append(i-1)

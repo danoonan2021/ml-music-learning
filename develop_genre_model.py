@@ -4,37 +4,41 @@ import matplotlib.pyplot as plt
 import json
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
-
+import math
 
 DATA_PATH = 'vocab.json'
 EPOCHS = 64
 NUM_OF_GENRES = 10
 
 def save_model(model, accuracy):
-
-    model_name = ('model_' + str(EPOCHS) + "_" + str(accuracy[1]))
-
+    # Generate a custom name for the model
+    model_name = ("model_" + str(EPOCHS) + "_" + str(math.floor(accuracy[1] * 100)) + str(math.floor(accuracy[0] * 100000)) + ".pb")
+    # Save model with custom name
     model.save(model_name)
 
 def build_model(input_shape):
     # instantiate model
     model = keras.Sequential()
-
     # add 1st convoluted input layer
-    model.add(keras.layers.Conv2D(32, (3,3), activation='relu', input_shape=input_shape))
-    model.add(keras.layers.MaxPooling2D((3,3), strides=(2,2), padding='same'))
+    model.add(keras.layers.Conv2D(32, (3,3), activation='relu', input_shape=input_shape, padding='valid'))
+    model.add(keras.layers.MaxPooling2D(2, padding='same'))
     model.add(keras.layers.BatchNormalization())
     # add 2nd convoluted layer
-    model.add(keras.layers.Conv2D(32, (2,2), activation='relu'))
-    model.add(keras.layers.MaxPooling2D((2,2), strides=(2,2), padding='same'))
+    model.add(keras.layers.Conv2D(128, (2,2), activation='relu', padding='valid'))
+    model.add(keras.layers.MaxPooling2D(2, padding='same'))
     model.add(keras.layers.BatchNormalization())
+    model.add(keras.layers.Dropout(0.3))
     # add 3rd convoluted layer
-    model.add(keras.layers.Conv2D(64, (2,2), activation='sigmoid'))
-    model.add(keras.layers.MaxPooling2D((2,2), strides=(2,2), padding='same'))
+    model.add(keras.layers.Conv2D(128, (2,2), activation='relu', padding='valid'))
+    model.add(keras.layers.MaxPooling2D(2, padding='same'))
     model.add(keras.layers.BatchNormalization())
+    model.add(keras.layers.Dropout(0.3))
     # add hidden layer
-    model.add(keras.layers.Flatten())
-    model.add(keras.layers.Dense(32, activation='relu'))
+    model.add(keras.layers.GlobalAveragePooling2D())
+    model.add(keras.layers.Dense(512, activation='relu'))
+    model.add(keras.layers.Dropout(0.3))
+    # add another hidden layer
+    model.add(keras.layers.Dense(512, activation='relu'))
     model.add(keras.layers.Dropout(0.3))
     # output 
     model.add(keras.layers.Dense(10, activation='softmax'))
